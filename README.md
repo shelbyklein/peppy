@@ -3,8 +3,9 @@
 Peppy is a native Adobe InDesign plug-in that lets AI agents work in your open
 InDesign documents over MCP. It's the InDesign sibling of
 [Slippy](https://tonykastaneda.github.io/slippy/), which does the same for
-Illustrator and Photoshop. The design follows Slippy's, but all the code here
-is our own.
+Illustrator and Photoshop. Peppy follows Slippy's design, and its panel is
+adapted from Slippy's code, shared with permission (see [CREDITS](CREDITS.md)).
+Where Slippy is a frog, Peppy is a hare: gray fur, tall ears, buck teeth.
 
 ```
 agent ──MCP──▶ 127.0.0.1:7333/mcp/<token> ─▶ Peppy.InDesignPlugin ─▶ InDesign C++ SDK
@@ -35,6 +36,7 @@ shell ─▶ client/peppy ─▶ /rpc/<token> ──────┘   (server th
 | `mock/`: the whole stack on an in-memory document, no SDK needed | done |
 | `tests/test_protocol.py`: 24 checks against the mock | passing |
 | `client/peppy`: CLI over JSON-RPC | done |
+| `panel/`: the panel with Peppy the hare (ears flop asleep, perk awake, pin back on errors; nose twitches), bars, feed, agent badge, terminal drawer | done; `make preview` runs it live on the mock |
 | `indesign/`: the plug-in itself (startup service, idle-task main-thread queue, command sequences, the commands, panel) | **needs the InDesign SDK** |
 
 ## Build
@@ -42,6 +44,7 @@ shell ─▶ client/peppy ─▶ /rpc/<token> ──────┘   (server th
 ```sh
 make mock && build/peppy-mock    # serves the mock on 127.0.0.1:7343 (PEPPY_PORT to change)
 make test                        # protocol tests against the mock
+make preview                     # the panel, live on the mock (agents can connect), with made-up demo calls
 make plugin                      # the InDesign plug-in, once the SDK is at ~/Developer/AdobeInDesignSDK
 ```
 

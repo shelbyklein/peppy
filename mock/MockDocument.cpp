@@ -1,10 +1,7 @@
-// Peppy's mock host: the real server, MCP, dispatcher and catalog, backed by a
-// small in-memory "InDesign document" instead of InDesign. For testing agents
-// and the protocol without the SDK or the app.
-//
-//   make mock && build/peppy-mock            # serves on 127.0.0.1:7343 by default (PEPPY_PORT)
+// The mock document: a small in-memory "InDesign document" behind the real
+// catalog, for testing agents, the protocol and the panel without InDesign.
 
-#include "../shared/Catalog.h"
+#include "Mock.h"
 #include "../shared/Dispatch.h"
 #include "../shared/Mcp.h"
 #include "../shared/Server.h"
@@ -21,21 +18,17 @@ using namespace peppy;
 
 namespace {
 
-// ---- the "main thread"
+// ---- the host: undo steps are snapshots of the document; "main thread" is whatever post does
 
 class MockHost : public Host {
 public:
-	MockHost() : fThread([this] { Loop(); }) {}
+	explicit MockHost(std::function<void(std::function<void()>)> post) : fPost(std::move(post)) {}
 
-	void Post(std::function<void()> fn) override
-	{
-		std::lock_guard<std::mutex> lock(fMutex);
-		fQueue.push_back(std::move(fn));
-		fCv.notify_one();
-	}
+	void Post(std::function<void()> fn) override { fPost(std::move(fn)); }
 	void BeginStep(const std::string& name) override { fStepName = name; fBefore = Doc(); }
 	void EndStep(bool commit) override
 	{
+		if (fStepName.find("history.") != std::string::npos) return;   // undo/redo aren't steps of their own
 		if (!commit) { Doc() = fBefore; return; }
 		if (Doc() != fBefore) { fUndo.push_back({fStepName, fBefore}); fRedo.clear(); }
 	}
@@ -48,26 +41,9 @@ public:
 	std::vector<std::pair<std::string, Json>> fUndo, fRedo;
 
 private:
-	std::mutex fMutex;
-	std::condition_variable fCv;
-	std::deque<std::function<void()>> fQueue;
+	std::function<void(std::function<void()>)> fPost;
 	std::string fStepName;
 	Json fBefore;
-	std::thread fThread;
-
-	void Loop()
-	{
-		for (;;) {
-			std::function<void()> fn;
-			{
-				std::unique_lock<std::mutex> lock(fMutex);
-				fCv.wait(lock, [this] { return !fQueue.empty(); });
-				fn = std::move(fQueue.front());
-				fQueue.pop_front();
-			}
-			fn();
-		}
-	}
 };
 
 MockHost* gHost;
@@ -146,7 +122,11 @@ Json MakeFrame(const Json& p, const std::string& type)
 	return Brief(it);
 }
 
-std::map<std::string, Runner> Runners()
+} // namespace
+
+namespace peppy {
+
+std::map<std::string, Runner> MockRunners()
 {
 	std::map<std::string, Runner> r;
 	r["app.info"] = [](const Json&) {
@@ -309,44 +289,11 @@ std::map<std::string, Runner> Runners()
 	return r;
 }
 
-// Undo/redo shouldn't themselves become undo steps.
-class Host2 : public MockHost {
-public:
-	void BeginStep(const std::string& name) override { fName = name; MockHost::BeginStep(name); }
-	void EndStep(bool commit) override
-	{
-		if (fName.find("history.") != std::string::npos) return;
-		MockHost::EndStep(commit);
-	}
-	std::string fName;
-};
 
-} // namespace
-
-int main()
+Host* MakeMockHost(std::function<void(std::function<void()>)> post)
 {
-	std::signal(SIGPIPE, SIG_IGN);
-	// Its own token and session file, apart from the real plug-in's.
-	setenv("PEPPY_HOME", (std::string(std::getenv("HOME")) + "/Library/Application Support/Peppy/mock").c_str(), 0);
-	static Host2 host;
-	gHost = &host;
-	SetHost(&host);
-	RegisterCatalog(Runners());
-	SetMcpInfo({"Peppy for Adobe InDesign (mock)", "0.1.0", Instructions(), Everyday()});
-	SetCallObserver([](const CallEvent& e) {
-		std::printf("%s %-18s %6.1f ms  %s\n", e.ok ? (e.edit ? "✎" : "·") : "✗", e.method.c_str(), e.milliseconds,
-			e.line.substr(0, e.line.find('\n')).c_str());
-		std::fflush(stdout);
-	});
-
-	const char* portEnv = std::getenv("PEPPY_PORT");
-	Server server;
-	std::string error;
-	if (!server.Start(portEnv ? std::atoi(portEnv) : 7343, "0.1.0-mock", error)) {
-		std::fprintf(stderr, "peppy-mock: %s\n", error.c_str());
-		return 1;
-	}
-	std::printf("Peppy mock listening: %s\n", server.McpUrl().c_str());
-	std::fflush(stdout);
-	for (;;) std::this_thread::sleep_for(std::chrono::hours(1));
+	gHost = new MockHost(std::move(post));
+	return gHost;
 }
+
+} // namespace peppy
