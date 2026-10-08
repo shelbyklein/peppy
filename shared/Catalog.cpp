@@ -230,7 +230,7 @@ std::vector<Spec> Specs()
 
 } // namespace
 
-void RegisterCatalog(const std::map<std::string, Runner>& runners)
+void RegisterCatalog(const std::map<std::string, Runner>& runners, std::function<Runner(const std::string& method)> fallback)
 {
 	for (Spec& s : Specs()) {
 		Command c;
@@ -240,6 +240,7 @@ void RegisterCatalog(const std::map<std::string, Runner>& runners)
 		c.kind = s.kind;
 		auto it = runners.find(s.method);
 		if (it != runners.end()) c.run = it->second;
+		else if (fallback) c.run = fallback(s.method);
 		else {
 			std::string m = s.method;
 			c.run = [m](const Json&) -> Json {

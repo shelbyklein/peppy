@@ -1,0 +1,135 @@
+#include "MenuDef.fh"
+#include "ActionDef.fh"
+#include "ActionDefs.h"
+#include "AdobeMenuPositions.h"
+#include "LocaleIndex.h"
+#include "PMLocaleIds.h"
+#include "StringTable.fh"
+#include "objectmodeltypes.fh"
+#include "ShuksanID.h"
+#include "ActionID.h"
+#include "CommandID.h"
+#include "WorkspaceID.h"
+#include "widgetid.h"
+#include "BuildNumber.h"
+#include "GenericID.h"
+#include "PlugInModel_UIAttributes.h"
+
+#include "PpyID.h"
+
+#ifdef __ODFRC__
+
+resource PluginVersion (kSDKDefPluginVersionResourceID)
+{
+	kTargetVersion,
+	kPpyPluginID,
+	kSDKDefPlugInMajorVersionNumber, kSDKDefPlugInMinorVersionNumber,
+	kSDKDefHostMajorVersionNumber, kSDKDefHostMinorVersionNumber,
+	kPpyCurrentMajorFormatNumber, kPpyCurrentMinorFormatNumber,
+	{ kInDesignProduct },
+	{ kWildFS },
+	kUIPlugIn,
+	kPpyVersion
+};
+
+resource ClassDescriptionTable(kSDKDefClassDescriptionTableResourceID)
+{{{
+	// Starts the server and the panel once InDesign is up; stops them on quit.
+	Class
+	{
+		kPpyStartupShutdownBoss,
+		kInvalidClass,
+		{
+			IID_ISTARTUPSHUTDOWN, kPpyStartupShutdownImpl,
+			IID_IK2SERVICEPROVIDER, kLazyStartupShutdownProviderImpl,
+		}
+	},
+
+	// Runs agents' calls on the main thread.
+	AddIn
+	{
+		kSessionBoss,
+		kInvalidClass,
+		{
+			IID_IPPYIDLETASK, kPpyIdleTaskImpl,
+		}
+	},
+
+	// Window > Peppy
+	Class
+	{
+		kPpyActionComponentBoss,
+		kBaseActionComponentBoss,
+		{
+			IID_IACTIONCOMPONENT, kPpyActionComponentImpl,
+		}
+	},
+}}};
+
+resource FactoryList (kSDKDefFactoryListResourceID)
+{
+	kImplementationIDSpace,
+	{
+#include "PpyFactoryList.h"
+	}
+};
+
+resource MenuDef (kSDKDefMenuResourceID)
+{
+	{
+		kPpyShowPanelActionID,
+		kPpyMenuPath,
+		9999.0,
+		kSDKDefIsNotDynamicMenuFlag,
+	}
+};
+
+resource ActionDef (kSDKDefActionResourceID)
+{
+	{
+		kPpyActionComponentBoss,
+		kPpyShowPanelActionID,
+		kPpyShowPanelMenuKey,
+		kOtherActionArea,
+		kNormalAction,
+		kDisableIfLowMem,
+		kInvalidInterfaceID,
+		kSDKDefVisibleInKBSCEditorFlag,
+	}
+};
+
+resource LocaleIndex (kSDKDefStringsResourceID)
+{
+	kStringTableRsrcType,
+	{
+		kWildFS, k_Wild, kSDKDefStringsResourceID + index_enUS
+	}
+};
+
+resource StringTable (kSDKDefStringsResourceID + index_enUS)
+{
+	k_enUS,
+	kEuropeanMacToWinEncodingConverter,
+	{
+		kPpyCompanyKey,			kPpyCompanyValue,
+		kPpyShowPanelMenuKey,	"Peppy",
+	}
+};
+
+resource LocaleIndex (kSDKDefStringsNoTransResourceID)
+{
+	kStringTableRsrcType,
+	{
+		kWildFS, k_Wild, kSDKDefStringsNoTransResourceID + index_enUS
+	}
+};
+
+resource StringTable (kSDKDefStringsNoTransResourceID + index_enUS)
+{
+	k_enUS,
+	kEuropeanMacToWinEncodingConverter,
+	{
+	}
+};
+
+#endif // __ODFRC__

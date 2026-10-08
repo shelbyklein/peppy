@@ -20,8 +20,9 @@ namespace peppy {
 
 using Runner = std::function<Json(const Json& params)>;
 
-// Registers the whole catalog, using runners[method] for each command.
-void RegisterCatalog(const std::map<std::string, Runner>& runners);
+// Registers the whole catalog, using runners[method] for each command, else
+// fallback(method) when given, else a runner that says it isn't built yet.
+void RegisterCatalog(const std::map<std::string, Runner>& runners, std::function<Runner(const std::string& method)> fallback = nullptr);
 
 // The everyday commands that become MCP tools of their own.
 const std::vector<std::string>& Everyday();

@@ -1,0 +1,3 @@
+REGISTER_PMINTERFACE(PpyStartupShutdown, kPpyStartupShutdownImpl)
+REGISTER_PMINTERFACE(PpyIdleTask, kPpyIdleTaskImpl)
+REGISTER_PMINTERFACE(PpyActionComponent, kPpyActionComponentImpl)

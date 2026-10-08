@@ -37,7 +37,7 @@ shell ─▶ client/peppy ─▶ /rpc/<token> ──────┘   (server th
 | `tests/test_protocol.py`: 24 checks against the mock | passing |
 | `client/peppy`: CLI over JSON-RPC | done |
 | `panel/`: the panel with Peppy the hare (ears flop asleep, perk awake, pin back on errors; nose twitches), bars, feed, agent badge, terminal drawer | done; `make preview` runs it live on the mock |
-| `indesign/`: the plug-in itself (startup service, idle-task main-thread queue, command sequences, the commands, panel) | **needs the InDesign SDK** |
+| `indesign/`: the plug-in: startup service, idle-task main-thread queue, undo steps as command sequences, Window > Peppy, the panel, and the commands (`peppy.jsx`, InDesign's scripting DOM run in-process in a persistent engine; undo/redo, script.run and screenshots native) | builds; first run in InDesign pending |
 
 ## Build
 
@@ -51,6 +51,26 @@ make plugin                      # the InDesign plug-in, once the SDK is at ~/De
 To get the SDK, sign in at https://developer.adobe.com/console, open
 **Downloads**, choose **InDesign**, and download the **InDesign 2026 Plug-in SDK**
 for macOS. Unzip it to `~/Developer/AdobeInDesignSDK`.
+
+**The SDK's resource compiler and Gatekeeper.** `devtools/bin/odfrc-cmd` comes
+quarantined and only ad hoc signed, and macOS holds it at launch, forever, with
+no error. Clear the quarantine, then keep a re-signed copy under another name,
+which the Makefile prefers:
+
+```sh
+xattr -dr com.apple.quarantine ~/Developer/AdobeInDesignSDK
+cp ~/Developer/AdobeInDesignSDK/devtools/bin/odfrc-cmd /tmp/odfrc-x && codesign --force --sign - /tmp/odfrc-x
+mv /tmp/odfrc-x ~/Developer/AdobeInDesignSDK/devtools/bin/odfrc-x
+```
+
+**Installing.** InDesign's `Plug-Ins` folder belongs to root, so once, make a
+`Peppy` folder there that's yours; after that `make install` needs no sudo.
+Quit InDesign first.
+
+```sh
+sudo mkdir -p "/Applications/Adobe InDesign 2026/Plug-Ins/Peppy" && sudo chown $USER "/Applications/Adobe InDesign 2026/Plug-Ins/Peppy"
+make plugin && make -C indesign install
+```
 
 ## How the plug-in hooks in (plan)
 
