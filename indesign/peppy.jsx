@@ -2,6 +2,7 @@
 // Loaded once into the persistent "peppy" engine by the plug-in; each call is
 // __peppy.run(method, paramsJson) -> JSON {result} or {error: {code, message, hint}}.
 // It runs inside the plug-in's undo step, on the main thread, with dialogs off.
+// ExtendScript quirk: always parenthesize a chained ?: (a ? b : (c ? d : e)), or it parses wrong.
 //
 // Units are points; coordinates are page coordinates (origin at the page's
 // top-left, y down); bounds are {x, y, width, height}.
@@ -125,7 +126,7 @@ var __peppy = (function () {
 	}
 
 	function targets(d, p) {
-		var ids = has(p, 'ids') ? p.ids : has(p, 'id') ? [p.id] : null;
+		var ids = has(p, 'ids') ? p.ids : (has(p, 'id') ? [p.id] : null);   // ExtendScript misparses unparenthesized chained ?:
 		if (ids === null) {
 			var sel = selectionItems(d);
 			if (!sel.length) fail(kInvalidParams, 'no ids given and nothing is selected', 'pass ids, or select items with item.select');
@@ -332,7 +333,7 @@ var __peppy = (function () {
 		if (has(p, 'size')) t.pointSize = p.size;
 		if (has(p, 'leading')) t.leading = p.leading === 'auto' ? Leading.AUTO : p.leading;
 		if (has(p, 'tracking')) t.tracking = p.tracking;
-		if (has(p, 'kerning')) t.kerningMethod = p.kerning === 'metrics' ? '$ID/Metrics' : p.kerning === 'optical' ? '$ID/Optical' : t.kerningMethod;
+		if (has(p, 'kerning')) t.kerningMethod = p.kerning === 'metrics' ? '$ID/Metrics' : (p.kerning === 'optical' ? '$ID/Optical' : t.kerningMethod);
 		if (has(p, 'color')) t.fillColor = colorFor(d, p.color);
 		if (has(p, 'tint')) t.fillTint = p.tint;
 		if (has(p, 'align')) {
@@ -437,7 +438,9 @@ var __peppy = (function () {
 				if (has(p, 'gutter')) mp.columnGutter = p.gutter;
 			}
 		}
-		return {document: app.documents.length - 1, name: d.name, pages: d.pages.length};
+		var index = 0;
+		for (var k = 0; k < app.documents.length; k++) if (app.documents[k] == d) index = k;
+		return {document: index, name: d.name, pages: d.pages.length};
 	};
 
 	C['document.open'] = function (p) {
@@ -831,7 +834,7 @@ var __peppy = (function () {
 		var d = doc(p), item = findItem(d, need(p, 'id')), story = findItem(d, need(p, 'story'));
 		if (!(story instanceof Story)) story = story.parentStory;
 		var ip = story.insertionPoints[need(p, 'index')];
-		item.anchoredObjectSettings.insertAnchoredObject(ip, p.position === 'aboveLine' ? AnchorPosition.ABOVE_LINE : p.position === 'anchored' ? AnchorPosition.ANCHORED : AnchorPosition.INLINE_POSITION);
+		item.anchoredObjectSettings.insertAnchoredObject(ip, p.position === 'aboveLine' ? AnchorPosition.ABOVE_LINE : (p.position === 'anchored' ? AnchorPosition.ANCHORED : AnchorPosition.INLINE_POSITION));
 		return brief(item);
 	};
 
@@ -1310,6 +1313,24 @@ var __peppy = (function () {
 			slug: ScreenModeOptions.PREVIEW_TO_SLUG, presentation: ScreenModeOptions.PRESENTATION_PREVIEW}[p.mode];
 		return {zoom: w.zoomPercentage, page: w.activePage.name};
 	};
+
+	// ---- history (runs outside any undo step of Peppy's own)
+
+	function undoRedo(p, undo) {
+		var d = doc(p), steps = has(p, 'steps') ? p.steps : 1, names = [];
+		for (var i = 0; i < steps; i++) {
+			var name = undo ? d.undoName : d.redoName;
+			if (!name) break;
+			if (undo) d.undo(); else d.redo();
+			names.push(name);
+		}
+		if (!names.length) fail(kHost, undo ? 'nothing to undo in ' + d.name : 'nothing to redo in ' + d.name);
+		var out = {document: d.name};
+		out[undo ? 'undone' : 'redone'] = names;
+		return out;
+	}
+	C['history.undo'] = function (p) { return undoRedo(p, true); };
+	C['history.redo'] = function (p) { return undoRedo(p, false); };
 
 	// ---- menu actions
 

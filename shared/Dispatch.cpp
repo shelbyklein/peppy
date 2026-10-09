@@ -150,7 +150,7 @@ Json RunOne(const Json& call, const std::vector<Json>& done, const std::string& 
 		CallEvent ev;
 		ev.method = method;
 		ev.ok = error.empty();
-		ev.edit = c && c->kind == Kind::Edit;
+		ev.edit = c && (c->kind == Kind::Edit || c->kind == Kind::Undo);
 		ev.milliseconds = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
 		ev.line = Narrate(method, params, error.empty() ? result : Json(nullptr), error);
 		ev.error = error;
@@ -236,7 +236,7 @@ Json Dispatch(const Json& request, const std::string& agent, double timeoutSecon
 	size_t start = 0;
 	for (size_t i = 0; i < calls.size(); i++) {
 		Kind k = KindOf(calls[i]);
-		if (k == Kind::Write) {
+		if (k == Kind::Write || k == Kind::Undo) {
 			if (i > start) runs.push_back({start, i});
 			runs.push_back({i, i + 1});
 			start = i + 1;

@@ -56,6 +56,7 @@ enum class Kind {
 	Edit,       // changes the document: one undo step
 	Write,      // writes a file (save, export): runs alone, never inside an edit step
 	Switch,     // opens, closes, creates or activates a document: ends the run
+	Undo,       // undo / redo: changes the document, but must run alone and outside any undo step
 };
 
 struct Command {

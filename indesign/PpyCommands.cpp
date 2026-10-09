@@ -4,11 +4,6 @@
 
 #include "VCPlugInHeaders.h"
 
-#include "ICmdHistory.h"
-#include "ICommandProcessor.h"
-#include "IDocument.h"
-#include "ILayoutUIUtils.h"
-#include "ISession.h"
 #include "Utils.h"
 
 #include "PpyHost.h"
@@ -65,29 +60,6 @@ Json CallLibrary(const std::string& method, const Json& params)
 	return reply.contains("result") ? reply["result"] : Json(nullptr);
 }
 
-IDocument* FrontDocument() { return Utils<ILayoutUIUtils>()->GetFrontDocument(); }
-
-Json UndoRedo(const Json& p, bool undo)
-{
-	IDocument* doc = FrontDocument();
-	if (!doc) throw peppy::Unavailable("no document is open");
-	InterfacePtr<ICmdHistory> history(GetExecutionContextSession()->QueryCommandProcessor(), UseDefaultIID());
-	if (!history) throw peppy::Unavailable("InDesign's undo history isn't available");
-	UIDRef target = ::GetUIDRef(doc);
-	int steps = (int) peppy::Num(p, "steps", 1);
-	Json names = Json::array();
-	for (int i = 0; i < steps; i++) {
-		if (undo ? !history->CanUndo(target) : !history->CanRedo(target)) break;
-		PMString name;
-		if (undo) history->GetNthUndoStepName(&name, 0, target);
-		else history->GetNthRedoStepName(&name, 0, target);
-		if ((undo ? history->Undo(1, target) : history->Redo(1, target)) != kSuccess) break;
-		names.push_back(name.GetUTF8String());
-	}
-	if (names.empty()) throw peppy::Error(peppy::kErrHost, undo ? "nothing to undo" : "nothing to redo");
-	return {{undo ? "undone" : "redone", names}};
-}
-
 std::string Base64(const std::string& in)
 {
 	static const char* t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -112,8 +84,6 @@ std::string Base64(const std::string& in)
 std::map<std::string, peppy::Runner> PpyRunners()
 {
 	std::map<std::string, peppy::Runner> r;
-	r["history.undo"] = [](const Json& p) { return UndoRedo(p, true); };
-	r["history.redo"] = [](const Json& p) { return UndoRedo(p, false); };
 	r["script.run"] = [](const Json& p) -> Json {
 		std::string code = peppy::Str(p, "code");
 		if (code.empty()) throw peppy::InvalidParams("missing 'code'");

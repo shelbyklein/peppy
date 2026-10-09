@@ -218,8 +218,8 @@ std::vector<Spec> Specs()
 			 P("mode", "string - normal, preview, bleed, slug, presentation")}},
 
 		// ---- history and escape hatches
-		{"history.undo", Kind::Edit, "Undo steps in the active document (Edit > Undo).", {P("steps", "integer (default 1)")}},
-		{"history.redo", Kind::Edit, "Redo steps.", {P("steps", "integer (default 1)")}},
+		{"history.undo", Kind::Undo, "Undo steps in a document (Edit > Undo); a peppy_batch is one step.", {P("steps", "integer (default 1)"), P("document", kDoc)}},
+		{"history.redo", Kind::Undo, "Redo steps.", {P("steps", "integer (default 1)"), P("document", kDoc)}},
 		{"action.list", Kind::Read, "InDesign's menu actions (every menu command and keyboard shortcut target): id, name, area, enabled.", {P("search", "string - filter by name")}},
 		{"action.run", Kind::Edit, "Run a menu action by id or exact name (from action.list), as if chosen from the menu. Refused if it would open a dialog.",
 			{P("id", "integer"), P("name", "string")}},

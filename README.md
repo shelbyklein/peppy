@@ -37,7 +37,7 @@ shell ─▶ client/peppy ─▶ /rpc/<token> ──────┘   (server th
 | `tests/test_protocol.py`: 24 checks against the mock | passing |
 | `client/peppy`: CLI over JSON-RPC | done |
 | `panel/`: the panel with Peppy the hare (ears flop asleep, perk awake, pin back on errors; nose twitches), bars, feed, agent badge, terminal drawer | done; `make preview` runs it live on the mock |
-| `indesign/`: the plug-in: startup service, idle-task main-thread queue, undo steps as command sequences, Window > Peppy, the panel, and the commands (`peppy.jsx`, InDesign's scripting DOM run in-process in a persistent engine; undo/redo, script.run and screenshots native) | builds; first run in InDesign pending |
+| `indesign/`: the plug-in: startup service, idle-task main-thread queue, undo steps as command sequences, Window > Peppy, the panel, and the commands (`peppy.jsx`, InDesign's scripting DOM run in-process in a persistent engine; undo/redo, script.run and screenshots native) | runs in InDesign 2026: MCP, batches as one undo step, screenshots verified |
 
 ## Build
 
