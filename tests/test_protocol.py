@@ -123,6 +123,16 @@ try:
         {"method": "text.get", "params": {"id": "$0.id"}}]})
     check("quiet batch still references full results", not r.get("isError") and steps[1] == {"id": frame["id"]}, steps)
 
+    print("images")
+    r = mcp("tools/call", {"name": "view_screenshot", "arguments": {"page": "1"}})["result"]
+    kinds = [c["type"] for c in r["content"]]
+    check("screenshot comes back as an image block", kinds == ["text", "image"] and "data" not in r["content"][0]["text"], kinds)
+    r = mcp("tools/call", {"name": "peppy_batch", "arguments": {"calls": [
+        {"method": "page.list"}, {"method": "view.screenshot", "params": {"page": "1"}}]}})["result"]
+    kinds = [c["type"] for c in r["content"]]
+    check("batch images come back as image blocks, not base64 text",
+          kinds == ["text", "image"] and "/9j/" not in r["content"][0]["text"], kinds)
+
     print("rpc")
     out = post(f"/rpc/{TOKEN}", [{"jsonrpc": "2.0", "id": 1, "method": "app.info"}, {"jsonrpc": "2.0", "id": 2, "method": "page.list"}])[1]
     check("plain JSON-RPC batch", isinstance(out, list) and out[1]["result"][1]["name"] == "2", out)

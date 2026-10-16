@@ -34,10 +34,15 @@ shell ─▶ client/peppy ─▶ /rpc/<token> ──────┘   (server th
 |---|---|
 | `shared/`: HTTP server, token, MCP, dispatcher (runs, undo steps, `$0.id` references, quiet), narration, command catalog | done, tested |
 | `mock/`: the whole stack on an in-memory document, no SDK needed | done |
-| `tests/test_protocol.py`: 24 checks against the mock | passing |
+| `tests/test_protocol.py`: 26 checks against the mock | passing |
 | `client/peppy`: CLI over JSON-RPC | done |
 | `panel/`: the panel with Peppy the hare (ears flop asleep, perk awake, pin back on errors; nose twitches), bars, feed, agent badge, terminal drawer | done; `make preview` runs it live on the mock |
 | `indesign/`: the plug-in: startup service, idle-task main-thread queue, undo steps as command sequences, Window > Peppy, the panel, and the commands (`peppy.jsx`, InDesign's scripting DOM run in-process in a persistent engine; undo/redo, script.run and screenshots native) | runs in InDesign 2026: MCP, batches as one undo step, screenshots verified |
+
+## Version
+
+The version lives in one place, `VERSION`. The plug-in (its resources, Info.plist
+and `app.info`), the mock and the panel all take it from there at build time.
 
 ## Build
 

@@ -40,13 +40,13 @@ PEPPY_FLAGS := $(ARCH) $(SYSROOT) -std=c++17 -stdlib=libc++ -O2 -g -fvisibility=
 	-DPEPPY_VERSION=\"$(VERSION)\" -I$(ROOT)/panel -I$(ROOT)/build
 
 ID_SRC    := PpyID.cpp PpyNoStrip.cpp PpyPlugin.cpp PpyCommands.cpp PpyScript.cpp $(ID_SDK)/source/sdksamples/common/SDKPlugInEntrypoint.cpp
-SHARED_SRC := $(addprefix $(ROOT)/shared/,Core.cpp Dispatch.cpp Narrate.cpp Mcp.cpp Server.cpp Catalog.cpp)
-PANEL_SRC := $(ROOT)/panel/PeppyPanelView.mm $(ROOT)/panel/Terminal.mm PpyPanel.mm
+SHARED_SRC := $(addprefix $(ROOT)/shared/,Core.cpp Dispatch.cpp Narrate.cpp Mcp.cpp Server.cpp Catalog.cpp Paths.cpp)
+PANEL_SRC := $(ROOT)/panel/PeppyPanelView.mm $(ROOT)/panel/Terminal.mm PpyPanel.mm PpyImage.mm
 OBJECTS   := $(addprefix $(OBJ)/id_,$(notdir $(ID_SRC:.cpp=.o))) $(addprefix $(OBJ)/,$(notdir $(SHARED_SRC:.cpp=.o))) \
 	$(addprefix $(OBJ)/,$(notdir $(PANEL_SRC:.mm=.o)))
 
 ODFRC_FLAGS := -d RELEASE -d MACINTOSH -d __GNUC__ -d ID_DROVER_ENABLE=1 -d ID_COCOA_ENABLE=1 -d DVAUI_ENABLE_CSNEXT_SKIN=1 -d __APPLE__ \
-	-i . $(patsubst -I%,-i %,$(filter -I%,$(SDK_FLAGS)))
+	-i . -i $(B) $(patsubst -I%,-i %,$(filter -I%,$(SDK_FLAGS)))
 
 .PHONY: all install clean
 all: $(BUNDLE)/.signed
@@ -58,10 +58,14 @@ $(OBJ) $(B):
 $(B)/peppy.jsx.inc: peppy.jsx | $(B)
 	python3 -c "import json,sys; s=open('peppy.jsx').read(); print('\n'.join(json.dumps(l + '\n') for l in s.split('\n')))" > $@
 
+# The version lives in one place, the repo's VERSION file.
+$(B)/PpyVersion.h: $(ROOT)/VERSION | $(B)
+	printf '#pragma once\n#define kPpyVersion "%s"\n' "$(VERSION)" > $@
+
 $(OBJ)/id_PpyCommands.o: $(B)/peppy.jsx.inc
-$(OBJ)/id_%.o: %.cpp PpyID.h PpyHost.h PpyPanel.h | $(OBJ)
+$(OBJ)/id_%.o: %.cpp PpyID.h PpyHost.h PpyPanel.h PpyImage.h $(B)/PpyVersion.h | $(OBJ)
 	$(CXX) $(ID_FLAGS) -c $< -o $@
-$(OBJ)/id_SDKPlugInEntrypoint.o: $(ID_SDK)/source/sdksamples/common/SDKPlugInEntrypoint.cpp | $(OBJ)
+$(OBJ)/id_SDKPlugInEntrypoint.o: $(ID_SDK)/source/sdksamples/common/SDKPlugInEntrypoint.cpp $(B)/PpyVersion.h | $(OBJ)
 	$(CXX) $(ID_FLAGS) -c $< -o $@
 $(OBJ)/%.o: $(ROOT)/shared/%.cpp $(wildcard $(ROOT)/shared/*.h) | $(OBJ)
 	$(CXX) $(PEPPY_FLAGS) -c $< -o $@
@@ -69,12 +73,14 @@ $(OBJ)/%.o: $(ROOT)/panel/%.mm $(wildcard $(ROOT)/panel/*.h) $(ROOT)/build/Agent
 	$(CXX) $(PEPPY_FLAGS) -fobjc-arc -c $< -o $@
 $(OBJ)/PpyPanel.o: PpyPanel.mm PpyPanel.h | $(OBJ)
 	$(CXX) $(PEPPY_FLAGS) -fobjc-arc -c $< -o $@
+$(OBJ)/PpyImage.o: PpyImage.mm PpyImage.h | $(OBJ)
+	$(CXX) $(PEPPY_FLAGS) -fobjc-arc -c $< -o $@
 
 $(ROOT)/build/AgentLogos.inc:
 	$(MAKE) -C $(ROOT) build/AgentLogos.inc
 
 # Resources: odfrc writes Ppy.fr.rsrc and the idrc_* folders InDesign reads.
-$(B)/res/.done: Ppy.fr PpyID.h PpyFactoryList.h | $(B)
+$(B)/res/.done: Ppy.fr PpyID.h PpyFactoryList.h $(B)/PpyVersion.h | $(B)
 	rm -rf $(B)/res && mkdir -p $(B)/res
 	$(ODFRC) $(ODFRC_FLAGS) -o $(B)/res/Ppy.fr.rsrc Ppy.fr
 	touch $@
@@ -84,7 +90,7 @@ $(EXE): $(OBJECTS)
 	$(CXX) $(ARCH) $(SYSROOT) -dynamiclib -stdlib=libc++ -fobjc-link-runtime -dead_strip \
 		-install_name /Peppy.InDesignPlugin/Versions/A/Peppy -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -no_data_in_code_info \
 		-F$(PKG)/macos -L$(PKG)/macos -L$(PKG)/macos/libs -F$(PKG)/Frameworks -L$(PKG)/Frameworks \
-		$^ -framework InDesignModelAndUI -lPublicPlugIn -framework Cocoa -framework QuartzCore -framework WebKit -o $@
+		$^ -framework InDesignModelAndUI -lPublicPlugIn -framework Cocoa -framework QuartzCore -framework WebKit -framework ImageIO -o $@
 
 $(BUNDLE)/.signed: $(EXE) $(B)/res/.done Info.plist $(wildcard $(ROOT)/panel/resources/terminal/*)
 	mkdir -p $(VER_A)/Resources

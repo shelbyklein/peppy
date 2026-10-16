@@ -8,6 +8,9 @@
 
 #include "PpyHost.h"
 #include "PpyID.h"
+#include "PpyImage.h"
+
+#include "../shared/Paths.h"
 
 #include <cstdio>
 #include <fstream>
@@ -60,25 +63,6 @@ Json CallLibrary(const std::string& method, const Json& params)
 	return reply.contains("result") ? reply["result"] : Json(nullptr);
 }
 
-std::string Base64(const std::string& in)
-{
-	static const char* t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	std::string out;
-	out.reserve((in.size() + 2) / 3 * 4);
-	size_t i = 0;
-	for (; i + 2 < in.size(); i += 3) {
-		unsigned v = (unsigned char) in[i] << 16 | (unsigned char) in[i + 1] << 8 | (unsigned char) in[i + 2];
-		out += t[v >> 18]; out += t[(v >> 12) & 63]; out += t[(v >> 6) & 63]; out += t[v & 63];
-	}
-	if (i < in.size()) {
-		unsigned v = (unsigned char) in[i] << 16 | (i + 1 < in.size() ? (unsigned char) in[i + 1] << 8 : 0);
-		out += t[v >> 18]; out += t[(v >> 12) & 63];
-		out += i + 1 < in.size() ? t[(v >> 6) & 63] : '=';
-		out += '=';
-	}
-	return out;
-}
-
 } // namespace
 
 std::map<std::string, peppy::Runner> PpyRunners()
@@ -91,18 +75,46 @@ std::map<std::string, peppy::Runner> PpyRunners()
 		std::string out = PpyRunScript(code);
 		try { return Json::parse(out); } catch (...) { return out; }
 	};
-	// The library exports the page; the image goes back to the agent to look at.
+	// The library exports the page as a PNG; it goes back to the agent as a picture
+	// (JPEG, at most 1024 px). With a path, the full-size PNG stays there too.
 	r["view.screenshot"] = [](const Json& p) {
-		Json shot = CallLibrary("view.screenshot", p);
+		Json q = p;
+		if (q.contains("path")) q["path"] = peppy::OutputPath(peppy::Str(p, "path"));
+		Json shot = CallLibrary("view.screenshot", q);
 		std::string path = shot.value("path", "");
-		std::ifstream in(path, std::ios::binary);
-		if (!in) throw peppy::Error(peppy::kErrHost, "InDesign didn't write the screenshot");
-		std::string png((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-		in.close();
-		if (shot.value("temporary", false)) { std::remove(path.c_str()); shot.erase("path"); }
+		bool temporary = shot.value("temporary", false);
+		Json image;
+		try { image = PpyInlineImage(path); }
+		catch (...) { if (temporary) std::remove(path.c_str()); throw; }
+		if (temporary) { std::remove(path.c_str()); shot.erase("path"); }
 		shot.erase("temporary");
-		shot["pngBase64"] = Base64(png);
+		shot["image"] = image;
 		return shot;
+	};
+	// Without a path, export shows the agent a page instead of writing a file.
+	r["document.export"] = [](const Json& p) -> Json {
+		if (peppy::Str(p, "path").empty()) {
+			Json q = {{"resolution", 144}};
+			if (p.contains("document")) q["document"] = p["document"];
+			std::string page = peppy::Str(p, "page");
+			if (page.empty()) {   // the first page of 'pages' ("3-5, 8" -> "3")
+				std::string pages = peppy::Str(p, "pages");
+				page = pages.substr(0, pages.find_first_of(",-"));
+				page.erase(0, page.find_first_not_of(' '));
+				page.erase(page.find_last_not_of(' ') + 1);
+				if (page == "all") page.clear();
+			}
+			if (!page.empty()) q["page"] = page;
+			return peppy::Find("view.screenshot")->run(q);
+		}
+		Json q = p;
+		q["path"] = peppy::OutputPath(peppy::Str(p, "path"));
+		return CallLibrary("document.export", q);
+	};
+	r["document.save"] = [](const Json& p) {
+		Json q = p;
+		if (!peppy::Str(p, "path").empty()) q["path"] = peppy::OutputPath(peppy::Str(p, "path"));
+		return CallLibrary("document.save", q);
 	};
 	r["app.info"] = [](const Json& p) {
 		Json info = CallLibrary("app.info", p);

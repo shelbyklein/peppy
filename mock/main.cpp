@@ -67,7 +67,7 @@ int main()
 	setenv("PEPPY_HOME", (std::string(std::getenv("HOME")) + "/Library/Application Support/Peppy/mock").c_str(), 0);
 	SetHost(MakeMockHost([](std::function<void()> fn) { MainThread().Post(std::move(fn)); }));
 	RegisterCatalog(MockRunners());
-	SetMcpInfo({"Peppy for Adobe InDesign (mock)", "0.1.0", Instructions(), Everyday()});
+	SetMcpInfo({"Peppy for Adobe InDesign (mock)", PEPPY_VERSION, Instructions(), Everyday()});
 	SetCallObserver([](const CallEvent& e) {
 		std::printf("%s %-18s %6.1f ms  %s\n", e.ok ? (e.edit ? "✎" : "·") : "✗", e.method.c_str(), e.milliseconds,
 			e.line.substr(0, e.line.find('\n')).c_str());
@@ -77,7 +77,7 @@ int main()
 	const char* portEnv = std::getenv("PEPPY_PORT");
 	Server server;
 	std::string error;
-	if (!server.Start(portEnv ? std::atoi(portEnv) : 7343, "0.1.0-mock", error)) {
+	if (!server.Start(portEnv ? std::atoi(portEnv) : 7343, PEPPY_VERSION "-mock", error)) {
 		std::fprintf(stderr, "peppy-mock: %s\n", error.c_str());
 		return 1;
 	}

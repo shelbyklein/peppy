@@ -4,12 +4,12 @@
 // for a shipping plug-in; this one is unassigned in the SDK and in InDesign 2026.
 
 #include "SDKDef.h"
+#include "PpyVersion.h"   // kPpyVersion, made from the repo's VERSION at build time
 
 #define kPpyCompanyKey		"Peppy"
 #define kPpyCompanyValue	"Peppy"
 #define kPpyPluginName		"Peppy"
 #define kPpyPrefixNumber	0x1C7E00
-#define kPpyVersion			"0.1.0"
 #define kPpyAuthor			"Shelby Klein"
 #define kPpyPrefix			RezLong(kPpyPrefixNumber)
 #define kPpyStringPrefix	SDK_DEF_STRINGIZE(kPpyPrefixNumber)

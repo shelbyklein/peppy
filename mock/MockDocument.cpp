@@ -130,7 +130,7 @@ std::map<std::string, Runner> MockRunners()
 {
 	std::map<std::string, Runner> r;
 	r["app.info"] = [](const Json&) {
-		return Json{{"app", "InDesign (mock)"}, {"version", "21.6"}, {"peppy", "0.1.0"}, {"documents", D().is_null() ? 0 : 1}, {"ready", true}};
+		return Json{{"app", "InDesign (mock)"}, {"version", "21.6"}, {"peppy", PEPPY_VERSION}, {"documents", D().is_null() ? 0 : 1}, {"ready", true}};
 	};
 	r["document.new"] = [](const Json& p) {
 		NewDocument();
@@ -270,8 +270,10 @@ std::map<std::string, Runner> MockRunners()
 		(*it)["contents"] = Str(p, "contents");
 		return Brief(*it);
 	};
-	r["view.screenshot"] = [](const Json&) -> Json {
-		throw Unavailable("the mock host can't render", "this only works in InDesign");
+	// A 1x1 white JPEG: the mock can't render, but the image path can be tested.
+	r["view.screenshot"] = [](const Json& p) -> Json {
+		return {{"page", Str(p, "page", "1")}, {"mock", true}, {"image", {{"mimeType", "image/jpeg"},
+			{"data", "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="}}}};
 	};
 	r["history.undo"] = [](const Json& p) {
 		int steps = (int) Num(p, "steps", 1), done = 0;

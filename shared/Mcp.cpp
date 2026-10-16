@@ -92,16 +92,32 @@ Json ToolsList(bool allTools)
 	return tools;
 }
 
+// A command's picture (view.screenshot, document.export without a path) as an
+// MCP image block, taken out of the result so the text stays short; null if none.
+Json TakeImage(Json& result)
+{
+	if (!result.is_object() || !result.contains("image") || !result["image"].is_object() || !result["image"].contains("data")) return nullptr;
+	Json block = {{"type", "image"}, {"data", result["image"]["data"]}, {"mimeType", result["image"].value("mimeType", "image/jpeg")}};
+	result.erase("image");
+	return block;
+}
+
 // A JSON-RPC response from Dispatch, as an MCP tool result.
 Json AsToolResult(const Json& response)
 {
 	Json r;
 	if (response.is_array()) {
 		bool anyError = false;
-		for (const Json& x : response) anyError |= x.contains("error");
-		Json steps = Json::array();
-		for (const Json& x : response) steps.push_back(x.contains("error") ? Json{{"error", x["error"]}} : x["result"]);
+		Json steps = Json::array(), images = Json::array();
+		for (const Json& x : response) {
+			if (x.contains("error")) { anyError = true; steps.push_back({{"error", x["error"]}}); continue; }
+			Json result = x["result"];
+			Json image = TakeImage(result);
+			if (!image.is_null()) images.push_back(image);
+			steps.push_back(result);
+		}
 		r["content"] = Json::array({{{"type", "text"}, {"text", steps.dump()}}});
+		for (Json& image : images) r["content"].push_back(image);
 		if (anyError) r["isError"] = true;
 		return r;
 	}
@@ -113,16 +129,10 @@ Json AsToolResult(const Json& response)
 		r["isError"] = true;
 		return r;
 	}
-	const Json& result = response["result"];
-	// A rendered image comes back as an MCP image so the agent can see it.
-	if (result.is_object() && result.contains("pngBase64")) {
-		Json meta = result;
-		meta.erase("pngBase64");
-		r["content"] = Json::array({{{"type", "image"}, {"data", result["pngBase64"]}, {"mimeType", "image/png"}},
-		                            {{"type", "text"}, {"text", meta.dump()}}});
-		return r;
-	}
+	Json result = response["result"];
+	Json image = TakeImage(result);
 	r["content"] = Json::array({{{"type", "text"}, {"text", result.dump()}}});
+	if (!image.is_null()) r["content"].push_back(image);
 	return r;
 }
 

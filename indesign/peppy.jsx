@@ -820,6 +820,71 @@ var __peppy = (function () {
 		return {deleted: ids};
 	};
 
+	// Frame bounds, not outlines: InDesign keeps a frame's rectangle handy, and
+	// for proofing (text into a photo, a caption over a button) that's the question.
+	function visibleOn(item) {
+		try { if (!item.visible || !item.itemLayer.visible) return false; } catch (e) { return false; }
+		return true;
+	}
+	function gap(a, b) {   // distance between two {x, y, width, height}; negative = overlap depth
+		var dx = Math.max(a.x - (b.x + b.width), b.x - (a.x + a.width));
+		var dy = Math.max(a.y - (b.y + b.height), b.y - (a.y + a.height));
+		return dx > 0 || dy > 0 ? Math.sqrt(Math.max(dx, 0) * Math.max(dx, 0) + Math.max(dy, 0) * Math.max(dy, 0)) : Math.max(dx, dy);
+	}
+	// z: id -> position in the spread's allPageItems, which runs front to back
+	// (pageItems is creation order, not stacking order).
+	function zOrder(spread) {
+		var z = {}, all = spread.allPageItems;
+		for (var i = 0; i < all.length; i++) z[all[i].id] = i;
+		return z;
+	}
+	function overlapRow(a, b, page, z) {
+		var ba = boundsOf(a, page), bb = boundsOf(b, page), g = gap(ba, bb);
+		var row = {a: brief(a), b: brief(b), overlaps: g < 0, distance: g < 0 ? 0 : Math.round(g * 100) / 100};
+		if (g < 0) {
+			var w = Math.min(ba.x + ba.width, bb.x + bb.width) - Math.max(ba.x, bb.x);
+			var h = Math.min(ba.y + ba.height, bb.y + bb.height) - Math.max(ba.y, bb.y);
+			row.overlap = {width: Math.round(w * 100) / 100, height: Math.round(h * 100) / 100};
+		}
+		if (z[a.id] !== undefined && z[b.id] !== undefined) row.onTop = z[a.id] < z[b.id] ? 'a' : 'b';
+		return row;
+	}
+	function topLevelOn(page) {
+		var out = [], items = page.parent.pageItems.everyItem().getElements();
+		for (var i = 0; i < items.length; i++) {
+			if (!visibleOn(items[i])) continue;
+			var pg = pageFor(items[i]);
+			if (pg && pg == page) out.push(items[i]);
+		}
+		return out;
+	}
+
+	C['item.overlaps'] = function (p) {
+		var d = doc(p), margin = has(p, 'margin') ? p.margin : 0, limit = has(p, 'limit') ? p.limit : 200, out = [];
+		if (has(p, 'id')) {
+			var item = findItem(d, p.id), page = pageFor(item);
+			if (!page) fail(kInvalidParams, 'item ' + item.id + ' is on the pasteboard, not a page');
+			var spreadItems = page.parent.pageItems.everyItem().getElements(), z = zOrder(page.parent);
+			for (var i = 0; i < spreadItems.length && out.length < limit; i++) {
+				var other = spreadItems[i];
+				if (other.id === item.id || !visibleOn(other)) continue;
+				var row = overlapRow(item, other, page, z);
+				if (row.overlaps || row.distance <= margin) out.push(row);
+			}
+			return {item: brief(item), count: out.length, near: out};
+		}
+		var pg = pageOf(d, p.page), items = topLevelOn(pg), total = 0, zz = zOrder(pg.parent);
+		for (var a = 0; a < items.length; a++) for (var b = a + 1; b < items.length; b++) {
+			var A = items[a], B = items[b];
+			if (p.textOnly && !(A instanceof TextFrame) && !(B instanceof TextFrame)) continue;
+			var r = overlapRow(A, B, pg, zz);
+			if (!(r.overlaps || r.distance <= margin)) continue;
+			total++;
+			if (out.length < limit) out.push(r);
+		}
+		return {page: pageName(pg), items: items.length, count: total, pairs: out};
+	};
+
 	C['item.fit'] = function (p) {
 		var d = doc(p), items = targets(d, p);
 		var fit = {contentToFrame: FitOptions.CONTENT_TO_FRAME, frameToContent: FitOptions.FRAME_TO_CONTENT, proportionally: FitOptions.PROPORTIONALLY,

@@ -9,7 +9,7 @@ CXX     ?= clang++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -DPEPPY_VERSION=\"$(VERSION)\"
 ID_SDK  ?= $(HOME)/Developer/AdobeInDesignSDK
 
-SHARED := shared/Core.cpp shared/Dispatch.cpp shared/Narrate.cpp shared/Mcp.cpp shared/Server.cpp shared/Catalog.cpp
+SHARED := shared/Core.cpp shared/Dispatch.cpp shared/Narrate.cpp shared/Mcp.cpp shared/Server.cpp shared/Catalog.cpp shared/Paths.cpp
 
 .PHONY: all mock test preview plugin clean
 all: mock
