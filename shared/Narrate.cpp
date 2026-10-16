@@ -80,6 +80,7 @@ std::string Narrate(const std::string& method, const Json& params, const Json& r
 	if (method == "text.find") return "Searched the text";
 	if (method == "text.replace") return "Replaced text";
 	if (method == "document.info") return "Looked at the document";
+	if (method == "document.new") return "Made a new document";
 	if (method == "document.open") return "Opened " + Quote(params.value("path", "a file"));
 	if (method == "document.save") return "Saved the document";
 	if (method == "document.close") return "Closed the document";
