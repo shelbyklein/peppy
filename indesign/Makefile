@@ -69,15 +69,15 @@ $(OBJ)/id_SDKPlugInEntrypoint.o: $(ID_SDK)/source/sdksamples/common/SDKPlugInEnt
 	$(CXX) $(ID_FLAGS) -c $< -o $@
 $(OBJ)/%.o: $(ROOT)/shared/%.cpp $(wildcard $(ROOT)/shared/*.h) | $(OBJ)
 	$(CXX) $(PEPPY_FLAGS) -c $< -o $@
-$(OBJ)/%.o: $(ROOT)/panel/%.mm $(wildcard $(ROOT)/panel/*.h) $(ROOT)/build/AgentLogos.inc | $(OBJ)
+$(OBJ)/%.o: $(ROOT)/panel/%.mm $(wildcard $(ROOT)/panel/*.h) $(ROOT)/panel/AgentLogos.inc | $(OBJ)
 	$(CXX) $(PEPPY_FLAGS) -fobjc-arc -c $< -o $@
 $(OBJ)/PpyPanel.o: PpyPanel.mm PpyPanel.h | $(OBJ)
 	$(CXX) $(PEPPY_FLAGS) -fobjc-arc -c $< -o $@
 $(OBJ)/PpyImage.o: PpyImage.mm PpyImage.h | $(OBJ)
 	$(CXX) $(PEPPY_FLAGS) -fobjc-arc -c $< -o $@
 
-$(ROOT)/build/AgentLogos.inc:
-	$(MAKE) -C $(ROOT) build/AgentLogos.inc
+$(ROOT)/panel/AgentLogos.inc:
+	$(MAKE) -C $(ROOT) panel/AgentLogos.inc
 
 # Resources: odfrc writes Ppy.fr.rsrc and the idrc_* folders InDesign reads.
 $(B)/res/.done: Ppy.fr PpyID.h PpyFactoryList.h $(B)/PpyVersion.h | $(B)

@@ -97,8 +97,10 @@ and save paths (including a OneDrive-redirected Desktop).
   sheets use paths relative to it), builds, and puts `Peppy.pln` and
   `(Peppy Resources)` in `Plug-Ins\Peppy`.
 - The token and session live in `%APPDATA%\Peppy`.
-- **Panel:** not ported yet. Window > Peppy copies the connection URL to the
-  clipboard and shows it, with the call count.
+- **Panel:** Peppy the hare in a floating tool window above InDesign (GDI+,
+  adapted from Slippy's Windows panel): moods, bars, feed, agent badge and Copy
+  connection, like the Mac. Window > Peppy shows and hides it; right-click it
+  for Pause agents. No terminal drawer on Windows.
 
 ## How the plug-in hooks in (plan)
 

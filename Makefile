@@ -24,12 +24,12 @@ test: build/peppy-mock
 	python3 tests/test_protocol.py
 
 # The agents' logos for the panel (panel/resources/agents/*.svg).
-build/AgentLogos.inc: tools/agent_logos.py $(wildcard panel/resources/agents/*.svg)
+panel/AgentLogos.inc: tools/agent_logos.py $(wildcard panel/resources/agents/*.svg)
 	@mkdir -p build
 	python3 tools/agent_logos.py panel/resources/agents $@
 
 PANEL := panel/PeppyPanelView.mm panel/Terminal.mm
-build/PeppyPreview: build/AgentLogos.inc $(PANEL) panel/*.h panel/Preview.mm $(SHARED) mock/MockDocument.cpp mock/Mock.h shared/*.h
+build/PeppyPreview: panel/AgentLogos.inc $(PANEL) panel/*.h panel/Preview.mm $(SHARED) mock/MockDocument.cpp mock/Mock.h shared/*.h
 	$(CXX) $(CXXFLAGS) -fobjc-arc -Ipanel -Ibuild $(PANEL) panel/Preview.mm $(SHARED) mock/MockDocument.cpp \
 		-framework Cocoa -framework QuartzCore -framework WebKit -o $@
 
