@@ -4,6 +4,7 @@ server, MCP, batching, batch references, quiet replies, undo steps and errors.""
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -138,6 +139,8 @@ try:
     check("plain JSON-RPC batch", isinstance(out, list) and out[1]["result"][1]["name"] == "2", out)
 finally:
     proc.terminate()
+    proc.wait()
+    shutil.rmtree(home, ignore_errors=True)   # the mock's token and session folder
 
 print(f"\n{'all passed' if not failures else f'{failures} failed'}")
 sys.exit(1 if failures else 0)
