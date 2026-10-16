@@ -55,8 +55,8 @@ $(OBJ) $(B):
 	mkdir -p $@
 
 # peppy.jsx as a C++ string literal for PpyCommands.cpp.
-$(B)/peppy.jsx.inc: peppy.jsx | $(B)
-	python3 -c "import json,sys; s=open('peppy.jsx').read(); print('\n'.join(json.dumps(l + '\n') for l in s.split('\n')))" > $@
+$(B)/peppy.jsx.inc: peppy.jsx Makefile | $(B)
+	python3 -c "import json; s=open('peppy.jsx').read(); print('\n'.join(json.dumps(l + '\n') + ',' for l in s.split('\n')))" > $@
 
 # The version lives in one place, the repo's VERSION file.
 $(B)/PpyVersion.h: $(ROOT)/VERSION | $(B)

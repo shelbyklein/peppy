@@ -12,10 +12,11 @@
 // drive InDesign.
 //
 // The token is made once and kept in ~/Library/Application Support/Peppy/token
-// (mode 0600), so saved agent configs keep working; session.json next to it
+// (mode 0600; %APPDATA%\Peppy\token on Windows), so saved agent configs keep working; session.json next to it
 // has the current URLs.
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <thread>
 
@@ -34,7 +35,7 @@ public:
 	static std::string Folder();   // ~/Library/Application Support/Peppy
 
 private:
-	int fListen = -1;
+	intptr_t fListen = -1;   // a socket (SOCKET on Windows)
 	int fPort = 0;
 	std::string fToken, fVersion;
 	std::thread fAccept;
@@ -42,7 +43,7 @@ private:
 	std::atomic<int> fActive{0};
 
 	void AcceptLoop();
-	void Serve(int fd);
+	void Serve(intptr_t fd);
 	void WriteSession();
 };
 

@@ -4,7 +4,19 @@
 // throw, and the Host the app glue provides (main thread, undo steps).
 // The InDesign plug-in and the mock host both build on this.
 
+// Windows' min/max macros (from windows.h, which the InDesign SDK pulls in)
+// break json.hpp; keep them out of its way.
+#ifdef _WIN32
+#pragma push_macro("min")
+#pragma push_macro("max")
+#undef min
+#undef max
+#endif
 #include "third_party/json.hpp"
+#ifdef _WIN32
+#pragma pop_macro("max")
+#pragma pop_macro("min")
+#endif
 
 #include <functional>
 #include <map>
