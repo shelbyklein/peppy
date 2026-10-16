@@ -20,10 +20,21 @@ namespace {
 
 using peppy::Json;
 
-// The library's source, made from peppy.jsx at build time.
-const char* kLibrary =
+// The library's source, made from peppy.jsx at build time: one string per line,
+// since MSVC refuses a single literal over 64 KB.
+const char* kLibraryLines[] = {
 #include "peppy.jsx.inc"
-;
+	nullptr};
+
+const std::string& Library()
+{
+	static std::string text = [] {
+		std::string t;
+		for (const char** line = kLibraryLines; *line; line++) t += *line;
+		return t;
+	}();
+	return text;
+}
 
 bool gLibraryLoaded = false;
 
@@ -40,7 +51,7 @@ Json CallLibrary(const std::string& method, const Json& params)
 	std::string out;
 	for (int attempt = 0; attempt < 2; attempt++) {
 		std::string code = "#targetengine \"peppy\"\n";
-		if (!gLibraryLoaded) code += std::string(kLibrary) + "\n";
+		if (!gLibraryLoaded) code += Library() + "\n";
 		code += call;
 		try {
 			out = PpyRunScript(code);

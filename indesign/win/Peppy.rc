@@ -1,0 +1,32 @@
+// Windows version resource for Peppy.pln.
+#include "WinRezFlags.h"
+#include "BuildNumber.h"
+#include "PpyID.h"
+
+1 VERSIONINFO
+ FILEVERSION kMajorVersionNumberForResource, kMinorVersionNumberForResource, kDotVersionNumberForResource, kBuildNumber
+ PRODUCTVERSION kMajorVersionNumberForResource, kMinorVersionNumberForResource, kDotVersionNumberForResource, 0
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "Peppy\0"
+            VALUE "FileDescription", "Peppy: lets AI agents work in InDesign\0"
+            VALUE "FileVersion", kPpyVersion "\0"
+            VALUE "InternalName", kPpyPluginName "\0"
+            VALUE "OriginalFilename", "Peppy.pln\0"
+            VALUE "ProductName", "Peppy for Adobe InDesign\0"
+            VALUE "ProductVersion", kPpyVersion "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

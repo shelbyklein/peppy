@@ -77,6 +77,29 @@ sudo mkdir -p "/Applications/Adobe InDesign 2026/Plug-Ins/Peppy" && sudo chown $
 make plugin && make -C indesign install
 ```
 
+## Windows
+
+`indesign/win` builds `Peppy.pln` with Visual Studio 2022. Tested in InDesign
+2026 (21.6) on Windows 10: MCP, batches as one undo step, screenshots, export
+and save paths (including a OneDrive-redirected Desktop).
+
+- **Build Tools:** Visual Studio 2022 Build Tools with the C++ workload, the
+  Windows 11 SDK 10.0.26100, and the **MSVC 14.42** toolset
+  (`Microsoft.VisualStudio.Component.VC.14.42.17.12.x86.x64`). The InDesign 2026
+  SDK refuses newer compilers (`source\precomp\msvc\xlocnum_hack.h`).
+- **SDK:** the same plug-in SDK zip, unzipped to `C:\sdk\AdobeInDesignSDK` (use
+  `tar -xf`; `Expand-Archive` takes hours on it).
+- **Build / install** (quit InDesign first to install):
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File indesign\win\build.ps1 -Install
+  ```
+  It copies `Peppy.vcxproj` into the SDK's `build\win\prj` (the SDK's property
+  sheets use paths relative to it), builds, and puts `Peppy.pln` and
+  `(Peppy Resources)` in `Plug-Ins\Peppy`.
+- The token and session live in `%APPDATA%\Peppy`.
+- **Panel:** not ported yet. Window > Peppy copies the connection URL to the
+  clipboard and shows it, with the call count.
+
 ## How the plug-in hooks in (plan)
 
 - **Startup:** an `IStartupShutdownService` on `kSessionBoss` registers the
