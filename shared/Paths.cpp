@@ -3,6 +3,14 @@
 #include <cstdlib>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shlobj.h>
+#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "ole32.lib")
+#endif
 
 namespace peppy {
 
@@ -27,6 +35,18 @@ std::string Home()
 	const char* h = std::getenv("USERPROFILE");
 	return h ? h : "";
 }
+// The real Desktop: often not %USERPROFILE%\Desktop (OneDrive moves it).
+std::string Desktop()
+{
+	PWSTR wide = nullptr;
+	std::string out;
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Desktop, 0, nullptr, &wide))) {
+		int n = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
+		if (n > 1) { out.resize(n - 1); WideCharToMultiByte(CP_UTF8, 0, wide, -1, &out[0], n, nullptr, nullptr); }
+	}
+	CoTaskMemFree(wide);
+	return out.empty() ? Home() + "\\Desktop" : out;
+}
 bool IsAbsolute(const std::string& p) { return (p.size() > 2 && p[1] == ':' && (p[2] == '\\' || p[2] == '/')) || p.rfind("\\\\", 0) == 0; }
 #else
 const char kSep = '/';
@@ -40,6 +60,7 @@ std::string Home()
 	const char* h = std::getenv("HOME");
 	return h ? h : "";
 }
+std::string Desktop() { return Home() + "/Desktop"; }
 bool IsAbsolute(const std::string& p) { return !p.empty() && p[0] == '/'; }
 #endif
 
@@ -52,7 +73,7 @@ std::string OutputPath(const std::string& given)
 #ifdef _WIN32
 	for (char& c : path) if (c == '/') c = '\\';
 #endif
-	if (path.find(kSep) == std::string::npos && !(path.size() > 1 && path[1] == ':')) path = Home() + kSep + "Desktop" + kSep + path;
+	if (path.find(kSep) == std::string::npos && !(path.size() > 1 && path[1] == ':')) path = Desktop() + kSep + path;
 	else if (path.size() > 1 && path[0] == '~' && path[1] == kSep) path = Home() + path.substr(1);
 	if (!IsAbsolute(path)) throw InvalidParams("'" + given + "' isn't a full path", kOutputPathHelp);
 	if (path.back() == kSep) throw InvalidParams("'" + given + "' names a folder, not a file", kOutputPathHelp);

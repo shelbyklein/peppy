@@ -31,7 +31,13 @@ Copy-Item -Force (Join-Path $PSScriptRoot "Peppy.vcxproj") $Prj
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
 if (-not $msbuild) { throw "MSBuild not found: install Visual Studio 2022 Build Tools with the C++ workload" }
-& $msbuild (Join-Path $Prj "Peppy.vcxproj") /nologo /m /v:minimal /p:Configuration=Release /p:Platform=x64 "/p:PeppyRoot=$Root" "/p:PeppyVersion=$Version"
+# The SDK only accepts certain compilers (source\precomp\msvc\xlocnum_hack.h): for
+# InDesign 2026 that's MSVC 14.42 (VS 17.12), installed side by side as the
+# component Microsoft.VisualStudio.Component.VC.14.42.17.12.x86.x64.
+$vs = & $vswhere -latest -products * -property installationPath
+$tools = Get-ChildItem (Join-Path $vs "VC\Tools\MSVC") -Directory -Filter "14.42.*" | Select-Object -First 1 -ExpandProperty Name
+if (-not $tools) { throw "MSVC 14.42 isn't installed: add the VS component Microsoft.VisualStudio.Component.VC.14.42.17.12.x86.x64" }
+& $msbuild (Join-Path $Prj "Peppy.vcxproj") /nologo /m /v:minimal /p:Configuration=Release /p:Platform=x64 "/p:VCToolsVersion=$tools" "/p:PeppyRoot=$Root" "/p:PeppyVersion=$Version"
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
 # Peppy.pln and its "(Peppy Resources)" folder, gathered into build\win\Peppy.
@@ -41,6 +47,7 @@ if (Test-Path $Dist) { Remove-Item -Recurse -Force $Dist }
 New-Item -ItemType Directory -Force $Dist | Out-Null
 Copy-Item (Join-Path $Built "Peppy.pln") $Dist
 Copy-Item -Recurse (Join-Path $Built "(Peppy Resources)") $Dist
+Get-ChildItem (Join-Path $Dist "(Peppy Resources)") -Recurse -Directory -Filter "*.tlog" | Remove-Item -Recurse -Force   # build logs xcopy picks up
 Write-Host "Built $Dist"
 
 if ($Install) {
