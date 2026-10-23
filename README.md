@@ -124,3 +124,8 @@ Once the plug-in is running, click **Copy connection** in Peppy's panel and add
 `http://127.0.0.1:7333/mcp/<token>` as an MCP server (streamable HTTP). The token
 lives in `~/Library/Application Support/Peppy/token`. Add `?tools=all` to the URL
 to expose every command as a separate tool.
+
+## License
+
+MIT - see [LICENSE](LICENSE). Third-party parts keep their own terms; see
+[CREDITS](CREDITS.md).
